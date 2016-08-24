@@ -1,0 +1,6 @@
+/server-group={{ default_group }}:add(profile={{ default_profile }}, socket-binding-group={{ default_profile }}-sockets)
+/profile=ha/subsystem=modcluster/mod-cluster-config=configuration:write-attribute(name=load-balancing-group,value={{ modcluster_balancername }})
+/profile=ha/subsystem=modcluster/mod-cluster-config=configuration:write-attribute(name=proxy-list,value=127.0.0.1:6666)
+/host=master/server-config=server1:add(group=producao,socket-binding-port-offset=100,auto-start=true)
+/host=master/server-config=server2:add(group=producao,socket-binding-port-offset=200,auto-start=true)
+:start-servers()

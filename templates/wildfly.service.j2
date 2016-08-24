@@ -1,0 +1,12 @@
+[Unit]
+Description=WildFly Domain Controller
+After=network.target
+
+[Service]
+Type=simple
+User={{ os_user }}
+Group={{ os_user }}
+ExecStart={{ wildfly_home }}/bin/domain.sh -bmanagement=0.0.0.0
+
+[Install]
+WantedBy=multi-user.target

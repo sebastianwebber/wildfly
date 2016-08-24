@@ -1,0 +1,18 @@
+Listen *:6666
+ManagerBalancerName {{ modcluster_balancername }}
+<VirtualHost *:6666>
+  <Location />
+   Require ip 127.0.0 
+  </Location>
+
+  KeepAliveTimeout 300
+  MaxKeepAliveRequests 0
+  ServerAdvertise on
+  AdvertiseFrequency 5
+  EnableMCPMReceive
+
+  <Location /mod_cluster_manager>
+    SetHandler mod_cluster-manager
+    Require ip 127.0.0.1
+  </Location>
+</VirtualHost>

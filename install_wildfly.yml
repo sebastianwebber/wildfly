@@ -1,0 +1,71 @@
+- name: compose wildfly version, if necessary
+  set_fact:
+    wildfly_version: "10.1.0.Final"
+  when: wildfly_version is not defined
+
+- name: compose wildfly filename, if necessary
+  set_fact:
+    wildfly_filename: "wildfly-{{ wildfly_version }}"
+  when: wildfly_filename is not defined
+
+- name: Install basic packages
+  yum: name={{ item }} state=present
+  with_items:
+    - vim
+    - wget
+    - unzip
+    - elinks
+    - net-tools
+
+- name: download latest widlfly
+  get_url: 
+    url: "http://download.jboss.org/wildfly/{{ wildfly_version }}/{{ wildfly_filename }}.zip"
+    dest: "{{ default_path }}/{{ wildfly_filename }}.zip"
+
+- name: adding user wildfly
+  user: 
+    name: wildfly
+    comment: "Wildfly admin user" 
+
+- name: install widlfly
+  unarchive:
+    src: "{{ default_path }}/{{ wildfly_filename }}.zip"
+    dest: /opt
+    remote_src: yes
+    copy: no
+
+- name: compose wildfly home, if necessary
+  set_fact:
+    wildfly_home: "/opt/{{ wildfly_filename }}"
+  when: wildfly_home is not defined
+
+- name: updating wildfly permissions
+  file: 
+    path: "{{ wildfly_home }}"
+    owner: "{{ os_user }}"
+    group: "{{ os_user }}"
+    recurse: yes
+
+# TODO: find out why this is needed
+- name: updating '/opt' permissions
+  file: 
+    path: "/opt"
+    mode: "a+x"
+
+- name: add admin user
+  command: "{{ wildfly_home }}/bin/add-user.sh -u '{{ admin_user }}' -p '{{ admin_password }}'"
+
+- name: adding wildfly service
+  template: src=templates/wildfly.service.j2 dest=/usr/lib/systemd/system/wildfly.service 
+
+- name: start wildfly
+  service: name=wildfly state=started enabled=yes
+
+- name: wait for wildfly start
+  pause: seconds=45
+
+- name: creating cleanup script
+  copy: src=files/cleanup.cli dest=/tmp/cleanup.cli 
+
+- name: running cleanup script
+  command: "{{ wildfly_home }}/bin/jboss-cli.sh -c --timeout=300000 --file='/tmp/cleanup.cli'"

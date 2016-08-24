@@ -1,0 +1,35 @@
+---
+- hosts: all
+
+  vars:
+    default_path: '/opt/resources'
+    modcluster_balancername: appproducao
+
+  tasks:
+
+    - name: create base path
+      file: 
+        path: "{{default_path}}"
+        state: directory
+        mode: u=rwX,g=rX,o=rX
+
+    - include: install_java.yml
+      vars:
+        java_version: 8
+        java_subversion: 101
+        java_build: 13
+        jdk_os: 'linux'
+        jdk_arch: 'x64'
+
+    - include: install_mod_cluster.yml
+
+    - name: disable selinux on reboot
+      lineinfile: dest=/etc/selinux/config regexp=^SELINUX= line=SELINUX=disabled
+
+    - include: install_wildfly.yml
+      vars:
+        os_user: wildfly
+        admin_user: "{{ os_user }}"
+        admin_password: wildfly
+        default_group: producao
+        default_profile: ha

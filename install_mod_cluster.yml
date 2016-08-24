@@ -1,0 +1,41 @@
+- name: Install mod_cluster deps
+  yum: name={{ item }} state=present
+  with_items:
+    - httpd
+    - mod_ssl
+
+- name: remove proxy_balancer_module reference
+  lineinfile: dest=/etc/httpd/conf.modules.d/00-proxy.conf state=absent regexp="^LoadModule proxy_balancer_module"
+
+- name: adding mod_cluster modules to httpd
+  template: src=templates/02-modcluster.conf.j2 dest=/etc/httpd/conf.modules.d/02-modcluster.conf 
+
+- name: adding mod_cluster configuration to httpd
+  template: src=templates/httpd-modcluster.conf.j2 dest=/etc/httpd/conf.d/httpd-modcluster.conf 
+
+- name: download latest mod_cluster libs
+  get_url: 
+    url: http://downloads.jboss.org/mod_cluster//1.3.1.Final/linux-x86_64/mod_cluster-1.3.1.Final-linux2-x64-ssl.tar.gz
+    dest: "{{ default_path }}/mod_cluster-1.3.1.Final-linux2-x64-ssl.tar.gz"
+
+- name: extract mod_cluster libs
+  unarchive:
+    src: "{{ default_path }}/mod_cluster-1.3.1.Final-linux2-x64-ssl.tar.gz"
+    dest: /
+    remote_src: yes
+    mode: 0644
+    copy: no
+
+- name:  copy mod_cluster libs to httpd modules
+  copy: src={{ item }} dest=/etc/httpd/modules remote_src=yes
+  with_items:
+    - "/opt/jboss/httpd/lib/httpd/modules/mod_cluster_slotmem.so"
+    - "/opt/jboss/httpd/lib/httpd/modules/mod_manager.so"
+    - "/opt/jboss/httpd/lib/httpd/modules/mod_proxy_cluster.so"
+    - "/opt/jboss/httpd/lib/httpd/modules/mod_advertise.so"
+
+# - name: temporary disable selinux
+#   command: /sbin/setenforce 0  
+
+- name: restart httpd
+  service: name=httpd state=restarted enabled=yes
